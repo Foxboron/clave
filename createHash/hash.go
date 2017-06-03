@@ -316,8 +316,8 @@ func decodePrivateKey(filename string) *packet.PrivateKey {
 	return key
 }
 
-func createSignature() (*packet.Config, *newSignature) {
-	p := decodePublicKey("./test.pubkey")
+func createSignature(filename string) (*packet.Config, *newSignature) {
+	p := decodePublicKey(filename)
 	//p := decodePrivateKey("./test.privkey")
 	config := &packet.Config{
 		DefaultHash:            crypto.SHA256,
@@ -340,7 +340,10 @@ func createSignature() (*packet.Config, *newSignature) {
 }
 
 func main() {
-	config, signer := createSignature()
+	if len(os.Args) == 1 {
+		log.Fatal("Needs path for public key")
+	}
+	config, signer := createSignature(os.Args[0])
 	h := sha256.New()
 	io.Copy(h, os.Stdin)
 	err := signer.Sign(h, nil, config)
