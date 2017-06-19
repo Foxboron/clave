@@ -30,12 +30,28 @@ func fileToHash(name string) hash.Hash {
 	return h
 }
 
-func createSignRequest(config *packet.Config, signer *newSignature, h hash.Hash, name string) Sign {
-	unixTime, hashDigest := signer.Sign(h, nil, config)
-	return Sign{
-		Name:     name,
-		UnixTime: unixTime,
-		Digest:   hex.EncodeToString(hashDigest),
+var sign = make(chan Sign)
+
+// We rely on Sign not working to get the hash.
+// Ugly hack, but we can drop the library copy
+func _Sign(config *packet.Config, signer *packet.Signature, h hash.Hash, name string) {
+	defer func() {
+		if r := recover(); r != nil {
+			sign <- Sign{
+				Name:     name,
+				UnixTime: signer.CreationTime.Unix(),
+				Digest:   hex.EncodeToString(h.Sum(nil)),
+			}
+		}
+	}()
+	signer.Sign(h, nil, config)
+}
+
+func createSignRequest(config *packet.Config, signer *packet.Signature, h hash.Hash, name string) Sign {
+	go _Sign(config, signer, h, name)
+	select {
+	case s := <-sign:
+		return s
 	}
 }
 

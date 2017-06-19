@@ -37,7 +37,7 @@ func decodePublicKey(filename string) *packet.PublicKey {
 	return key
 }
 
-func createSignature(filename string) (*packet.Config, *newSignature) {
+func createSignature(filename string) (*packet.Config, *packet.Signature) {
 	p := decodePublicKey(filename)
 	bitLength, _ := p.BitLength()
 
@@ -53,7 +53,7 @@ func createSignature(filename string) (*packet.Config, *newSignature) {
 	}
 
 	currTime := config.Now()
-	sig := new(newSignature)
+	sig := new(packet.Signature)
 	sig.SigType = packet.SigTypeBinary
 	sig.PubKeyAlgo = p.PubKeyAlgo
 	sig.Hash = crypto.SHA256
