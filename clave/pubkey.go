@@ -1,9 +1,9 @@
-package main
+package clave
 
 import (
 	"crypto"
 	"errors"
-	"os"
+	"io"
 
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
@@ -12,14 +12,14 @@ import (
 )
 
 // TODO; Rewrite
-func decodePublicKey(filename string) *packet.PublicKey {
+func decodePublicKey(pgpkey io.Reader) *packet.PublicKey {
 
 	// open ascii armored public key
-	in, err := os.Open(filename)
-	kingpin.FatalIfError(err, "Error opening public key: %s", err)
-	defer in.Close()
+	// in, err := os.Open(filename)
+	// kingpin.FatalIfError(err, "Error opening public key: %s", err)
+	// defer in.Close()
 
-	block, err := armor.Decode(in)
+	block, err := armor.Decode(pgpkey)
 	kingpin.FatalIfError(err, "Error decoding OpenPGP Armor: %s", err)
 
 	if block.Type != openpgp.PublicKeyType {
@@ -37,8 +37,8 @@ func decodePublicKey(filename string) *packet.PublicKey {
 	return key
 }
 
-func createSignature(filename string) (*packet.Config, *packet.Signature) {
-	p := decodePublicKey(filename)
+func createSignature(pgpkey io.Reader) (*packet.Config, *packet.Signature) {
+	p := decodePublicKey(pgpkey)
 	bitLength, _ := p.BitLength()
 
 	//p := decodePrivateKey("./test.privkey")

@@ -1,4 +1,4 @@
-package main
+package clave
 
 import (
 	"encoding/hex"

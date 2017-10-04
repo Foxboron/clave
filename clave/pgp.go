@@ -1,9 +1,8 @@
-package main
+package clave
 
 import (
-	"fmt"
+	"io"
 	"log"
-	"os"
 
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
@@ -32,19 +31,17 @@ func decrypt(key *packet.PrivateKey) *packet.PrivateKey {
 }
 
 // TODO: Impelement decryption for armored keys
-func getArmoredPrivKey(keyringFileBuffer *os.File) *packet.PrivateKey {
+func getArmoredPrivKey(keyringFileBuffer io.Reader) *packet.PrivateKey {
 	block, err := armor.Decode(keyringFileBuffer)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if block.Type != openpgp.PrivateKeyType {
 		log.Fatal("Didn't find private key inn the armor")
 	}
 	reader := packet.NewReader(block.Body)
 	pkt, err := reader.Next()
 	if err != nil {
-		fmt.Println("err")
 		log.Fatal(err)
 	}
 
@@ -52,9 +49,13 @@ func getArmoredPrivKey(keyringFileBuffer *os.File) *packet.PrivateKey {
 	if !ok {
 		log.Fatal("Unknown error")
 	}
+	if key.Encrypted {
+		return decrypt(key)
+	}
 	return key
 }
 
+// Not really used
 func getKeyRingPrivKey(entityList openpgp.EntityList) *packet.PrivateKey {
 	// We currently assume this file contains only one privatekey
 	// and that its the correct one
@@ -72,23 +73,8 @@ func getKeyRingPrivKey(entityList openpgp.EntityList) *packet.PrivateKey {
 }
 
 // Search a Keyring for the first privatekey we find
-func getPrivateKey(file string) *packet.PrivateKey {
+func getPrivateKey(pgpkey io.Reader) *packet.PrivateKey {
 	var privateKey *packet.PrivateKey
-
-	keyringFileBuffer, _ := os.Open(file)
-	defer keyringFileBuffer.Close()
-	entityList, err := openpgp.ReadKeyRing(keyringFileBuffer)
-
-	// Probably armored if there isnt a keyring her
-	if err != nil {
-		// Reqind as ReadKeyRing fucked the pointer
-		keyringFileBuffer.Seek(0, 0)
-		privateKey = getArmoredPrivKey(keyringFileBuffer)
-	} else {
-		privateKey = getKeyRingPrivKey(entityList)
-		if privateKey == nil {
-			log.Fatal("Didn't find a privatekey inn the keyring")
-		}
-	}
+	privateKey = getArmoredPrivKey(pgpkey)
 	return privateKey
 }

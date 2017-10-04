@@ -1,40 +1,32 @@
-remote-sign
-===========
-WIP
+clave
+=====
+Clave enables remote GPG signing without exposing your private key to an remote server. It generates the signing hash on
+the remote server, and lets you sign the hash locally with your private key.
+
+A hash PGP uses to sign, is a combination of the keyid, UnixTime and the contents of the artifact.
+
+There are some drawbacks, the Go openpgp library is weird, so reading from keyrings are not trivial. The current
+implementation exports your key from gnupg, and then decrypt the key where you end up with typing the password twice.
+
+The other problem is if you inherently trust your remote server. Clave is more an experiment if this is a useful
+compromise in some cases, like a build server. Where reproducible packages can be built, and the signed hash verified.
 
 
-The goal of this project is to enable remote signing without exposing your private key. it accomplishes this
-by creating the hash PGP uses for signing, along with the timestamp. This is then used inn the second part to 
-actually create a valid PGP signature.
-
-It utilizes code from:
-* https://gist.github.com/eliquious/9e96017f47d9bd43cdf9
-* https://github.com/golang/crypto/blob/master/openpgp/packet/signature.go
-
-There is a lot of copypasta involved as i had to work around Golangs export restrictions
-
-### Build
+# Usage
 ```
-λ → cd createHash && go build && cd -                    
-λ → cd createSignature && go build && cd -
+$ cat ~/.clave.yml 
+keyid: 9C02FF419FECBE16
+$ clave gen ./tests/test > ./requests
+$ cat ./requests 
+[{"Name":"./tests/test","UnixTime":1507146122,"Digest":"8201143f42b240e803f9b36b70b610f7031eb05c6b2b6f7195bfe9c7b5e62997"}]%                                                                                                          
+$ cat ./requests | clave sign
+$ cd ./tests && gpg --verify test.sig 
+gpg: assuming signed data in 'test'
+gpg: Signature made Wed 04 Oct 2017 09:42:02 PM CEST
+gpg:                using RSA key 9C02FF419FECBE16
+gpg: Good signature from "Morten Linderud <morten@linderud.pw>" [ultimate]
+gpg:                 aka "Morten Linderud <mcfoxax@gmail.com>" [ultimate]
+gpg:                 aka "Morten Linderud <morten.linderud@fribyte.uib.no>" [ultimate]
+gpg:                 aka "Morten Linderud <morten.linderud@student.uib.no>" [ultimate]
+gpg:                 aka "Morten Linderud <foxboron@archlinux.org>" [ultimate]
 ```
-
-
-### Example:
-
-```
-# Create signature requests - done remotely
-λ → ./createHash/createHash test.pubkey test > test.req
-λ → cat test.req
-[{"Name":"test","UnixTime":1496578872,"Digest":"971d7fd9645cc30a753bd44b855effb9921e3d1e484904902699f65934f9557b"}]%                                                                                                                     
-
-# Create signatures - done locally
-λ → cat test.req | createSignature/createSignature test.privkey
-
-# Verify signature
-λ → gpg --verify test.sig test
-gpg: Signature made Sun 04 Jun 2017 02:21:12 PM CEST
-gpg:                using RSA key 9010FC5907F00B27
-gpg: Good signature from "Test Testensen <test@test.no>" [ultimate]
-```
-
