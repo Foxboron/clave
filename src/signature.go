@@ -137,3 +137,15 @@ func createInitialSignatureConfig(pgpkey io.Reader) (*packet.Config, *packet.Sig
 
 	return config, sig
 }
+
+func VerifySignature(pgpkey io.Reader, signreq SignRequest) {
+	config, sig := createInitialSignatureConfig(pgpkey)
+	sig.CreationTime = time.Unix(signreq.UnixTime, 0) //set CreationTime to SignRequest time
+	h := fileToHash(signreq.Name)
+	request := createSignRequest(config, sig, h, signreq.Name)
+	if request.Digest == signreq.Digest {
+		log.Println("Correct signature!")
+	} else {
+		log.Fatal("Sinature request doesn't verify")
+	}
+}
