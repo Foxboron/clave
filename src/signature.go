@@ -1,6 +1,7 @@
 package clave
 
 import (
+	"crypto"
 	"encoding/hex"
 	"encoding/json"
 	"hash"
@@ -16,12 +17,16 @@ import (
 	"golang.org/x/crypto/openpgp/packet"
 )
 
+// Signature requests
+// UnixTime is for the timestamp to generate signature
+// Digest is the signing hash used by PGP
 type SignRequest struct {
 	Name     string
 	UnixTime int64
 	Digest   string
 }
 
+// List of signature requests
 type SignRequests []SignRequest
 
 func fileToHash(name string) hash.Hash {
@@ -34,6 +39,7 @@ func fileToHash(name string) hash.Hash {
 	return h
 }
 
+// Channel so we can recieve the signing request
 var sign = make(chan SignRequest)
 
 // We rely on Sign not working to get the hash.
@@ -51,6 +57,9 @@ func _Sign(config *packet.Config, signer *packet.Signature, h hash.Hash, name st
 	signer.Sign(h, nil, config)
 }
 
+/* Since the Sign function will crash it needs to
+be dispatched into its own thread so we can recover
+*/
 func createSignRequest(config *packet.Config, signer *packet.Signature, h hash.Hash, name string) SignRequest {
 	go _Sign(config, signer, h, name)
 	select {
@@ -59,10 +68,11 @@ func createSignRequest(config *packet.Config, signer *packet.Signature, h hash.H
 	}
 }
 
+// Creates the signature request for multiple files
 func CreateSignatureRequest(pgpkey io.Reader, file []string) {
 	var replies SignRequests
 
-	config, signer := createSignature(pgpkey)
+	config, signer := createInitialSignatureConfig(pgpkey)
 	var h hash.Hash
 
 	for _, file := range file {
@@ -77,6 +87,7 @@ func CreateSignatureRequest(pgpkey io.Reader, file []string) {
 	os.Stdout.Write(b)
 }
 
+// Takes a signature request and returns a real signature
 func CreateSignature(pgpkey io.Reader, request SignRequest) {
 	privKey := getPrivateKey(pgpkey)
 	sig := new(packet.Signature)
@@ -99,4 +110,30 @@ func CreateSignature(pgpkey io.Reader, request SignRequest) {
 		log.Fatal(err)
 	}
 	sig.Serialize(f)
+}
+
+// Generates the initial signature request
+func createInitialSignatureConfig(pgpkey io.Reader) (*packet.Config, *packet.Signature) {
+	p := getPublicKey(pgpkey)
+	bitLength, _ := p.BitLength()
+
+	config := &packet.Config{
+		DefaultHash:            crypto.SHA256,
+		DefaultCipher:          packet.CipherAES256,
+		DefaultCompressionAlgo: packet.CompressionZLIB,
+		CompressionConfig: &packet.CompressionConfig{
+			Level: 9,
+		},
+		RSABits: int(bitLength),
+	}
+
+	currTime := config.Now()
+	sig := new(packet.Signature)
+	sig.SigType = packet.SigTypeBinary
+	sig.PubKeyAlgo = p.PubKeyAlgo
+	sig.Hash = crypto.SHA256
+	sig.CreationTime = currTime
+	sig.IssuerKeyId = &p.KeyId
+
+	return config, sig
 }

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/foxboron/clave/clave"
+	"github.com/foxboron/clave/src"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

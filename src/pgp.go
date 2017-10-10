@@ -30,9 +30,43 @@ func decrypt(key *packet.PrivateKey) *packet.PrivateKey {
 	return key
 }
 
-// TODO: Impelement decryption for armored keys
-func getArmoredPrivKey(keyringFileBuffer io.Reader) *packet.PrivateKey {
-	block, err := armor.Decode(keyringFileBuffer)
+// TODO: This section could probably benefit from code reuse
+
+// Gets an armored public key
+func getArmoredPublicKey(pgpkey io.Reader) *packet.PublicKey {
+
+	block, err := armor.Decode(pgpkey)
+	if err != nil {
+		log.Fatal("Error decoding public key armor")
+	}
+
+	if block.Type != openpgp.PublicKeyType {
+		log.Fatal("Could not find public key")
+	}
+
+	reader := packet.NewReader(block.Body)
+	pkt, err := reader.Next()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	key, ok := pkt.(*packet.PublicKey)
+	if !ok {
+		log.Fatal("Invalid public key")
+	}
+	return key
+}
+
+func getPublicKey(pgpkey io.Reader) *packet.PublicKey {
+	var publickey *packet.PublicKey
+	// TODO: Add support for non-armored keys
+	publickey = getArmoredPublicKey(pgpkey)
+	return publickey
+}
+
+// Get an armored private key
+func getArmoredPrivKey(pgpkey io.Reader) *packet.PrivateKey {
+	block, err := armor.Decode(pgpkey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,26 +89,9 @@ func getArmoredPrivKey(keyringFileBuffer io.Reader) *packet.PrivateKey {
 	return key
 }
 
-// Not really used
-func getKeyRingPrivKey(entityList openpgp.EntityList) *packet.PrivateKey {
-	// We currently assume this file contains only one privatekey
-	// and that its the correct one
-	for _, entity := range entityList {
-		if entity.PrivateKey.PrivateKey == false {
-			continue
-		}
-		if entity.PrivateKey.Encrypted {
-			return decrypt(entity.PrivateKey)
-		} else {
-			return entity.PrivateKey
-		}
-	}
-	return nil
-}
-
-// Search a Keyring for the first privatekey we find
 func getPrivateKey(pgpkey io.Reader) *packet.PrivateKey {
 	var privateKey *packet.PrivateKey
+	// TODO: Add support for non-armored keys
 	privateKey = getArmoredPrivKey(pgpkey)
 	return privateKey
 }
