@@ -144,8 +144,8 @@ func VerifySignature(pgpkey io.Reader, signreq SignRequest) {
 	h := fileToHash(signreq.Name)
 	request := createSignRequest(config, sig, h, signreq.Name)
 	if request.Digest == signreq.Digest {
-		log.Println("Correct signature!")
+		log.Println("Correct signature request!")
 	} else {
-		log.Fatal("Sinature request doesn't verify")
+		log.Fatal("Sinature request doesn't match")
 	}
 }
