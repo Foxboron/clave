@@ -4,8 +4,10 @@ Clave enables remote GPG signing without exposing your private key to an remote
 server. It generates the signing hash on the remote server, and lets you sign
 the hash locally with your private key.
 
+The tool is currently under development, and any suggestions or improvements are
+appreciated!
 
-# Why
+## Why
 The signature hash used for openpgp signatures requires a few things:
 - signature type
 - public-key algorithm
@@ -32,7 +34,7 @@ https://lists.archlinux.org/pipermail/pacman-dev/2011-June/013333.html
 https://lists.gnupg.org/pipermail/gnupg-users/2011-June/042076.html  
 
 
-# How
+## How
 Golang implements the entire openpgp system with high level abstractions. It's
 pretty neat and easy to use. To create the signature we initiate the signing
 with the public key, along with a default configuration for the signature packet.
@@ -51,7 +53,7 @@ hash, and that our signing hash will always be returned. This creates the valid
 signature locally.
 
 
-# Drawbacks
+## Drawbacks
 There are some drawbacks, the Go openpgp library is weird, so reading from
 keyrings are not trivial. The current implementation exports your key from
 gnupg, and then decrypt the key where you end up with typing the password twice.
@@ -61,7 +63,7 @@ an experiment if this is a useful compromise in some cases, like a build server.
 Where reproducible packages can be built, and the signed hash verified.
 
 
-# Usage
+## Usage
 ```
 $ cat ~/.clave.yml 
 keyid: 9C02FF419FECBE16
@@ -78,6 +80,4 @@ gpg:                 aka "Morten Linderud <mcfoxax@gmail.com>" [ultimate]
 gpg:                 aka "Morten Linderud <morten.linderud@fribyte.uib.no>" [ultimate]
 gpg:                 aka "Morten Linderud <morten.linderud@student.uib.no>" [ultimate]
 gpg:                 aka "Morten Linderud <foxboron@archlinux.org>" [ultimate]
-$ cat request | ./clave verify -
-2017/10/10 22:22:33 Correct signature request!
 ```
