@@ -80,4 +80,6 @@ gpg:                 aka "Morten Linderud <mcfoxax@gmail.com>" [ultimate]
 gpg:                 aka "Morten Linderud <morten.linderud@fribyte.uib.no>" [ultimate]
 gpg:                 aka "Morten Linderud <morten.linderud@student.uib.no>" [ultimate]
 gpg:                 aka "Morten Linderud <foxboron@archlinux.org>" [ultimate]
+$ cat request | ./clave verify -
+2017/10/10 22:22:33 Correct signature request!
 ```
