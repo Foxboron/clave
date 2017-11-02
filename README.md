@@ -1,6 +1,6 @@
 clave
 =====
-Clave enables remote GPG signing without exposing your private key to an remote
+Clave enables remote GPG signing without exposing your private key to a remote
 server. It generates the signing hash on the remote server, and lets you sign
 the hash locally with your private key.
 
@@ -8,26 +8,26 @@ The tool is currently under development, and any suggestions or improvements are
 appreciated!
 
 ## Why
-The signature hash used for openpgp signatures requires a few things:
+The signature hash used for OpenPGP signatures requires a few things:
 - signature type
 - public-key algorithm
 - hashed subpackets 
 
 The above fields are concatenated with the data being signed to create the
 signing hash. This prevents you from running `sha256sum` over your file to
-create a openpgp signature.
+create an OpenPGP signature.
 
-The openpgp RFC explains this: https://tools.ietf.org/html/rfc4880#section-5.2.3
+The OpenPGP RFC explains this: https://tools.ietf.org/html/rfc4880#section-5.2.3
 
 The problem occurs when you have created a 3 GB artefact on your build server,
 and need to sign this. You could download the file, but this is slow and
-cumbersome. There are options to forward the signing socket to the remove
+cumbersome. There are options to forward the signing socket to the remote
 server which could pose as a solution.
 
 https://lists.archlinux.org/pipermail/arch-general/2017-January/042987.html
 
 There has also been previous discussion on the pacman-dev mailing list when
-signing was discussed, this in turn led to a discussion on the gnupg mailing
+signing was brought up. This in turn led to a discussion on the GnuPG mailing
 list where Koch made it clear this won't be implemented.
  
 https://lists.archlinux.org/pipermail/pacman-dev/2011-June/013333.html  
@@ -35,32 +35,32 @@ https://lists.gnupg.org/pipermail/gnupg-users/2011-June/042076.html
 
 
 ## How
-Golang implements the entire openpgp system with high level abstractions. It's
+Golang implements the entire OpenPGP system with high level abstractions. It's
 pretty neat and easy to use. To create the signature we initiate the signing
 with the public key, along with a default configuration for the signature packet.
 
 Since the public key is used, the actual signing parts of the library will
-crash. We dispatch the actual signing into a own thread, and recover from the
+crash. We dispatch the actual signing into its own thread, and recover from the
 crash. We can then grab the hash from the Hash struct we made, and use this in
 our signature request.
 
 https://github.com/Foxboron/clave/blob/master/src/signature.go#L47
 
-The signature request created by clave contains the filename, unix timestamp and
+The signature request created by clave contains the filename, Unix timestamp and
 the signing hash. This is used locally to resume the signing process by faking a
-hash struct. This enables us to make sure the openpgp library never modifies the
+hash struct. This enables us to make sure the OpenPGP library never modifies the
 hash, and that our signing hash will always be returned. This creates the valid
 signature locally.
 
 
 ## Drawbacks
 There are some drawbacks, the Go openpgp library is weird, so reading from
-keyrings are not trivial. The current implementation exports your key from
-gnupg, and then decrypt the key where you end up with typing the password twice.
+keyrings is not trivial. The current implementation exports your key from
+GnuPG, and then decrypts the key, where you end up typing the password twice.
 
 The other problem is if you inherently trust your remote server. Clave is more
-an experiment if this is a useful compromise in some cases, like a build server.
-Where reproducible packages can be built, and the signed hash verified.
+an experiment if this is a useful compromise in some cases (like a build server,
+where reproducible packages can be built, and the signed hash verified).
 
 
 ## Usage
